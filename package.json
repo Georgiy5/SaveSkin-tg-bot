@@ -1,0 +1,23 @@
+{
+  "name": "testbot",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "dependencies": {
+    "@grammyjs/hydrate": "^1.6.0",
+    "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "grammy": "^1.39.2",
+    "mongodb": "^7.0.0",
+    "mongoose": "^9.1.4",
+    "nodemon": "^3.1.11",
+    "openai": "^6.16.0"
+  }
+}
