@@ -36,15 +36,31 @@ bot.on(':successful_payment', async (ctx) => {
     switch (amount) {
         case (250):
             const newEndDateMonth = addDays(now, 30)
-            await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateMonth});
+            try {
+                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateMonth});
+            } catch (error) {
+                console.log(error)
+                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
+            }
             break;
         case (1100):
             const newEndDateHalf = addMonths(now, 6)
-            await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateHalf});
+
+            try {
+                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateHalf});
+            } catch (error) {
+                console.log(error)
+                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
+            }
             break;
         case (2000):
             const newEndDateYear = addMonths(now, 12)
-            await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateYear});
+            try {
+                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateYear});
+            } catch (error) {
+                console.log(error)
+                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
+            }
             break;
         default:
             console.error('Пиздос')
@@ -59,7 +75,22 @@ bot.on(':successful_payment', async (ctx) => {
 });
 
 
+bot.use(async (ctx, next) => {
+    // Пропускаем проверку для команд start, help, buy
+    if (ctx.message?.text?.startsWith('/start') || 
+        ctx.message?.text?.startsWith('/profile')) {
+        return next();
+    }
 
+    if (ctx.callbackQuery) {
+        const allowedCallbacks = ['month', 'halfYear', 'Year']
+        if (allowedCallbacks.includes(ctx.callbackQuery.data)) {
+            return next()
+        }
+    }
+    
+    await checkSubscription(ctx, next);
+});
 
 // Настройка сессий для хранения данных пользователя
 bot.use(session({
@@ -87,29 +118,36 @@ bot.api.setMyCommands([
 
 // Обработчик команды /start
 bot.command('start', async (ctx) => {
-    const recognizeUser = await User.findOne({telegramId: ctx.from.id})
-    if (!recognizeUser) {
-        await User.create({
-        telegramId: ctx.from.id,
-        firstName: ctx.from.first_name,
-        username: ctx.from.username,
-        isSubscriber: false
-        })
+    try {
+        const recognizeUser = await User.findOne({telegramId: ctx.from.id})
+        if (!recognizeUser) {
+            await User.create({
+            telegramId: ctx.from.id,
+            firstName: ctx.from.first_name,
+            username: ctx.from.username,
+            isSubscriber: false
+            })
+    }} catch (error) {
+        console.log(error)
+        await ctx.reply('Произошла ошибка. Попробуй еще раз!')
     }
 
-    const person = await User.findOne({telegramId: ctx.from.id});
 
-    if (person.isSubscriber === false || person.isSubscriber === undefined) {
-        
 
-    await ctx.reply(notWelcomeText, {
-        parse_mode: 'Markdown',
-        reply_markup: subcsriptionsPlan
-    })
+    try {
+        const person = await User.findOne({telegramId: ctx.from.id});
 
-    return
+        if (person.isSubscriber === false || person.isSubscriber === undefined) {
+            await ctx.reply(notWelcomeText, {
+                parse_mode: 'Markdown',
+                reply_markup: subcsriptionsPlan
+            })
+            return;
+        }
+    } catch (error) {
+        console.log(error)
+        await ctx.reply('Произошла ошибка. Попробуй еще раз!')
     }
-
     
     await ctx.reply(welcomeText, {
         parse_mode: 'Markdown',
@@ -119,10 +157,10 @@ bot.command('start', async (ctx) => {
 
 // Обработчик команды /type
 bot.command('type', async (ctx) => {
-    await ctx.reply('👤 Выберите ваш тип кожи:', {
+        await ctx.reply('👤 Выберите ваш тип кожи:', {
         reply_markup: skinTypeKeyboard
-    })
-})
+})})
+
 
 // Обработчик команды /features
 bot.command('features', async (ctx) => {
@@ -159,7 +197,12 @@ Aqua, Glycerin, Niacinamide, Salicylic Acid, Zinc PCA
 
 // Обработчик команды /profile
 bot.command('profile', async (ctx) => {
-    const person = await User.findOne({telegramId : ctx.from.id})
+    try {
+        const person = await User.findOne({telegramId: ctx.from.id});
+    } catch (error) {
+        console.log(error)
+        await ctx.reply('Произошла ошибка. Попробуй еще раз!')
+    }
     const username = person.username
     const firstName = person.firstName
     const endDate = person.endDate
@@ -329,6 +372,36 @@ bot.callbackQuery('new_check', async (ctx) => {
     await ctx.answerCallbackQuery()
     await ctx.reply('📋 Отправьте новый состав для анализа.')
 })
+
+async function checkSubscription(ctx, next) {
+    const userId = ctx.from.id;
+    
+    try {
+        const user = await User.findOne({ telegramId: userId });
+        
+        if (!user || !user.isSubscriber || !user.endDate) {
+            await ctx.reply('❌ Эта функция доступна только подписчикам!\n\nИспользуйте /start для приобретения подписки.');
+            return;
+        }
+        
+        // Проверяем, не истекла ли подписка
+        const now = new Date();
+        if (user.endDate < now) {
+            await User.updateOne(
+                { telegramId: userId },
+                { isSubscriber: false }
+            );
+            await ctx.reply('❌ Ваша подписка истекла!\n\nИспользуйте /start для продления.');
+            return;
+        }
+        
+        await next(); // Продолжаем выполнение
+        
+    } catch (error) {
+        console.error('Ошибка проверки подписки:', error);
+        await ctx.reply('Произошла ошибка. Попробуйте позже.');
+    }
+}
 
 bot.catch((err) => {
     console.error('Ошибка в боте:', err)
