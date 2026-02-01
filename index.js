@@ -1,5 +1,4 @@
 import 'dotenv/config'
-import { addDays, addMonths } from 'date-fns'
 import { Bot, Keyboard, InlineKeyboard, session, MemorySessionStorage } from 'grammy'
 import { hydrate } from '@grammyjs/hydrate'
 import { askDeepSeek } from './src/deepseek.js'
@@ -8,6 +7,8 @@ import { skinTypeKeyboard, skinFeaturesKeyboard, mainMenuKeyboard, subcsriptions
 import mongoose from 'mongoose'
 import { welcomeText, notWelcomeText } from './src/text.js'
 import { monthlyPayment, halfYearlyPayment, yearlyPayment } from './src/sendInvoice.js'
+import { successfulPayment } from './src/successfulPayment.js'
+import { User } from './src/UserSchema.js'
 
 
 const bot = new Bot(process.env.BOT_API_KEY)
@@ -16,64 +17,7 @@ bot.on('pre_checkout_query', async (ctx) => {
     await ctx.answerPreCheckoutQuery(true);
 });
 
-const userSchema = new mongoose.Schema({
-    telegramId: { type: Number, required: true, unique: true },
-    firstName: String,
-    username: String,
-    isSubscriber: { type: Boolean, required: true},
-    endDate: Date
-}, {timestamps: true})
-const User = mongoose.model('User', userSchema);
-
-bot.on(':successful_payment', async (ctx) => {
-    await ctx.reply('Вы приобрели подписку!')
-    const payment = ctx.message.successful_payment;
-    const amount = payment.total_amount / 100;
-
-    
-    const now = new Date()
-
-    switch (amount) {
-        case (250):
-            const newEndDateMonth = addDays(now, 30)
-            try {
-                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateMonth});
-            } catch (error) {
-                console.log(error)
-                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
-            }
-            break;
-        case (1100):
-            const newEndDateHalf = addMonths(now, 6)
-
-            try {
-                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateHalf});
-            } catch (error) {
-                console.log(error)
-                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
-            }
-            break;
-        case (2000):
-            const newEndDateYear = addMonths(now, 12)
-            try {
-                await User.updateOne({ telegramId: ctx.from.id}, {isSubscriber: true, endDate: newEndDateYear});
-            } catch (error) {
-                console.log(error)
-                await ctx.reply('Произошла ошибка. Попробуйте еще раз!')
-            }
-            break;
-        default:
-            console.error('Пиздос')
-    }
-        
-    console.log('Оплата получена:', {
-            userId: ctx.from.id,
-            amount: payment.total_amount / 100,
-            currency: payment.currency,
-            payload: payment.invoice_payload,
-    });
-});
-
+bot.on(':successful_payment', successfulPayment);
 
 bot.use(async (ctx, next) => {
     // Пропускаем проверку для команд start, help, buy
@@ -199,29 +143,23 @@ Aqua, Glycerin, Niacinamide, Salicylic Acid, Zinc PCA
 bot.command('profile', async (ctx) => {
     try {
         const person = await User.findOne({telegramId: ctx.from.id});
-    } catch (error) {
-        console.log(error)
-        await ctx.reply('Произошла ошибка. Попробуй еще раз!')
-    }
-    const username = person.username
-    const firstName = person.firstName
-    const endDate = person.endDate
-    const isSubscriber = person.isSubscriber
+        const endDate = person.endDate
+        const isSubscriber = person.isSubscriber
 
-    let date;
-    if (isSubscriber === true && endDate) {
-         date = new Date(person.endDate).toLocaleDateString('ru-RU')
-    } else {
-         date = 'Нет активной подписки'
-    }
-    let subscribeStatus
-    if (isSubscriber === false || isSubscriber === undefined) {
-        subscribeStatus = 'Неактивна'
-    } else {
-        subscribeStatus = 'Активна'
-    }
+        let date;
+        if (isSubscriber === true && endDate) {
+            date = new Date(person.endDate).toLocaleDateString('ru-RU')
+        } else {
+            date = 'Нет активной подписки'
+        }
+        let subscribeStatus
+        if (isSubscriber === false || isSubscriber === undefined) {
+            subscribeStatus = 'Неактивна'
+        } else {
+            subscribeStatus = 'Активна'
+        }
 
-    const profileText = `
+        const profileText = `
 👤 **Ваш профиль**
 
 📛 **Имя:** ${person.firstName || 'Не указано'}
@@ -229,9 +167,14 @@ bot.command('profile', async (ctx) => {
 🎫 **Статус подписки:** ${subscribeStatus}
 📅 **Подписка до:** ${date}
 🆔 **Ваш ID:** ${person.telegramId}
-    `.trim()
+        `.trim()
 
-    await ctx.reply(profileText, { parse_mode: 'Markdown' })
+        await ctx.reply(profileText, { parse_mode: 'Markdown', reply_markup: subcsriptionsPlan})
+    } catch (error) {
+        console.log(error)
+        await ctx.reply('Произошла ошибка. Попробуй еще раз!')
+    }
+
 })
 
 
