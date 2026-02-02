@@ -5,6 +5,7 @@ export const userSchema = new mongoose.Schema({
     firstName: String,
     username: String,
     isSubscriber: { type: Boolean, required: true},
-    endDate: Date
+    endDate: Date,
+    usedTrial: Boolean
 }, {timestamps: true})
 export const User = mongoose.model('User', userSchema);

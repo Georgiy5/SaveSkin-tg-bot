@@ -3,12 +3,13 @@ import { Bot, Keyboard, InlineKeyboard, session, MemorySessionStorage } from 'gr
 import { hydrate } from '@grammyjs/hydrate'
 import { askDeepSeek } from './src/deepseek.js'
 import { sendSplitMessages, splitMessage, getFeaturesName, getSkinTypeName, isLikelyIngredientList } from './src/functions.js'
-import { skinTypeKeyboard, skinFeaturesKeyboard, mainMenuKeyboard, subcsriptionsPlan} from './src/keyboards.js'
+import { skinTypeKeyboard, skinFeaturesKeyboard, mainMenuKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan} from './src/keyboards.js'
 import mongoose from 'mongoose'
 import { welcomeText, notWelcomeText } from './src/text.js'
 import { monthlyPayment, halfYearlyPayment, yearlyPayment } from './src/sendInvoice.js'
 import { successfulPayment } from './src/successfulPayment.js'
 import { User } from './src/UserSchema.js'
+import { addDays } from 'date-fns'
 
 
 const bot = new Bot(process.env.BOT_API_KEY)
@@ -27,7 +28,7 @@ bot.use(async (ctx, next) => {
     }
 
     if (ctx.callbackQuery) {
-        const allowedCallbacks = ['month', 'halfYear', 'Year']
+        const allowedCallbacks = ['month', 'halfYear', 'Year', 'fullSubscription', 'trial', 'back']
         if (allowedCallbacks.includes(ctx.callbackQuery.data)) {
             return next()
         }
@@ -63,13 +64,15 @@ bot.api.setMyCommands([
 // Обработчик команды /start
 bot.command('start', async (ctx) => {
     try {
+        const now = new Date()
         const recognizeUser = await User.findOne({telegramId: ctx.from.id})
         if (!recognizeUser) {
             await User.create({
             telegramId: ctx.from.id,
             firstName: ctx.from.first_name,
             username: ctx.from.username,
-            isSubscriber: false
+            isSubscriber: false,
+            usedTrial: false,
             })
     }} catch (error) {
         console.log(error)
@@ -84,7 +87,7 @@ bot.command('start', async (ctx) => {
         if (person.isSubscriber === false || person.isSubscriber === undefined) {
             await ctx.reply(notWelcomeText, {
                 parse_mode: 'Markdown',
-                reply_markup: subcsriptionsPlan
+                reply_markup: welcomeKeyboard
             })
             return;
         }
@@ -299,17 +302,39 @@ Water, Cyclopentasiloxane, Dimethicone, Niacinamide, Cetyl PEG/PPG-10/1 Dimethic
     }
 })
 
-// Обработчики кнопок главного меню
-bot.hears('🔍 Проверить состав', async (ctx) => {
-    await ctx.reply('📋 Отправьте состав косметического средства для анализа.')
+
+bot.callbackQuery('trial', async (ctx) => {
+    ctx.answerCallbackQuery()
+    try {
+        const now = new Date()
+        const person = await User.findOne({telegramId: ctx.from.id})
+        if (person.usedTrial === true) {
+            await ctx.reply('Вы уже использовали пробный период❌')
+        } else {
+            await User.updateOne({telegramId: ctx.from.id}, { usedTrial: true, endDate: addDays(now, 1), isSubscriber: true})
+            await ctx.editMessageText('Ваш пробный период активирован✅')
+        }
+    } catch (error) {
+        console.log(error)
+        await ctx.reply('Произошла ошибка, попробуйте еще раз!')
+    }
 })
 
-bot.hears('👤 Изменить тип кожи', async (ctx) => {
-    await ctx.reply('Выберите ваш тип кожи:', {
-        reply_markup: skinTypeKeyboard
+bot.callbackQuery('fullSubscription', async(ctx) => {
+    await ctx.answerCallbackQuery()
+    await ctx.editMessageText(notWelcomeText, {
+        parse_mode: 'Markdown',
+        reply_markup: welcomeSubscriptionsPlan
     })
 })
 
+bot.callbackQuery('back', async (ctx) => {
+    await ctx.answerCallbackQuery()
+    await ctx.editMessageText(notWelcomeText, {
+        parse_mode: 'Markdown',
+        reply_markup: welcomeKeyboard,
+    })
+})
 
 bot.callbackQuery('new_check', async (ctx) => {
     await ctx.answerCallbackQuery()

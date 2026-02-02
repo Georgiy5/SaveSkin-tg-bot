@@ -1,8 +1,14 @@
+import { skinTypeKeyboard } from "./keyboards.js";
+import { welcomeText } from "./text.js";
 import { User } from "./UserSchema.js";
 import { addDays, addMonths } from 'date-fns'
 
 export const successfulPayment = async (ctx) => {
     await ctx.reply('Вы приобрели подписку!')
+    await ctx.reply(welcomeText, {
+        reply_markup: skinTypeKeyboard,
+        parse_mode: 'Markdown'
+    })
     const payment = ctx.message.successful_payment;
     const amount = payment.total_amount / 100;
 

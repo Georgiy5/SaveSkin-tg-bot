@@ -27,3 +27,13 @@ export const subcsriptionsPlan = new InlineKeyboard()
     .text('Купить на 1 месяц', 'month').row()
     .text('Купить на 6 месяцев', 'halfYear').row()
     .text('Купить на 12 месяцев', 'year')
+
+export const welcomeSubscriptionsPlan = new InlineKeyboard()
+    .text('Купить на 1 месяц', 'month').row()
+    .text('Купить на 6 месяцев', 'halfYear').row()
+    .text('Купить на 12 месяцев', 'year').row()
+    .text('Назад⏪', 'back')
+
+export const welcomeKeyboard = new InlineKeyboard()
+    .text('Получить пробную подписку на 1 день', 'trial').row()
+    .text('Приобрести полную подписку', 'fullSubscription')
