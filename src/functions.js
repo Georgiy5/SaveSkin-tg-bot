@@ -55,10 +55,8 @@ export function splitMessage(text, maxLength = 4096) {
 export function getSkinTypeName(type) {
     const types = {
         'dry': 'Сухая',
-        'normal': 'Нормальная',
         'oily': 'Жирная',
         'combo': 'Комбинированная',
-        'sensitive': 'Чувствительная'
     }
     return types[type] || 'Не указан'
 }

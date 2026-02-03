@@ -2,10 +2,8 @@ import { InlineKeyboard, Keyboard } from "grammy"
 // Клавиатура для выбора типа кожи
 export const skinTypeKeyboard = new InlineKeyboard()
     .text('Сухая', 'dry').row()
-    .text('Нормальная', 'normal').row()
     .text('Жирная', 'oily').row()
     .text('Комбинированная', 'combo').row()
-    .text('Чувствительная', 'sensitive')
 
 // Клавиатура для особенностей кожи
 export const skinFeaturesKeyboard = new InlineKeyboard()
