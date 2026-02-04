@@ -3,7 +3,7 @@ import { Bot, Keyboard, InlineKeyboard, session, MemorySessionStorage } from 'gr
 import { hydrate } from '@grammyjs/hydrate'
 import { askDeepSeek } from './src/deepseek.js'
 import { sendSplitMessages, splitMessage, getFeaturesName, getSkinTypeName, isLikelyIngredientList } from './src/functions.js'
-import { skinTypeKeyboard, skinFeaturesKeyboard, mainMenuKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan} from './src/keyboards.js'
+import { skinTypeKeyboard, getSkinFeaturesKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan} from './src/keyboards.js'
 import mongoose from 'mongoose'
 import { welcomeText, notWelcomeText } from './src/text.js'
 import { monthlyPayment, halfYearlyPayment, yearlyPayment } from './src/sendInvoice.js'
@@ -111,8 +111,18 @@ bot.command('type', async (ctx) => {
 
 // Обработчик команды /features
 bot.command('features', async (ctx) => {
+    // const skinFeaturesKeyboard = new InlineKeyboard()
+    // .text(`Акне/прыщи${ctx.session.skinFeatures.includes('acne') ? '✅' : ''}`, 'acne').row()
+    // .text(`Розацеа${ctx.session.skinFeatures.includes('rosacea') ? '✅' : ''}`, 'rosacea').row()
+    // .text(`Аллергии${ctx.session.skinFeatures.includes('allergies') ? '✅' : ''}`, 'allergies').row()
+    // .text(`Купероз${ctx.session.skinFeatures.includes('couperose') ? '✅' : ''}`, 'couperose').row()
+    // .text(`Повышенная чувствительность${ctx.session.skinFeatures.includes('hypersensitivity') ? '✅' : ''}`, 'hypersensitivity').row()
+    // .text(`Дерматит${ctx.session.skinFeatures.includes('dermatit') ? '✅' : ''}`, 'dermatit').row()
+    // .text('Нет особенностей', 'none').row()
+    // .text('Перейти к анализу 👉', 'stop')
+
     await ctx.reply('📝 Есть ли у вас особенности кожи?', {
-        reply_markup: skinFeaturesKeyboard
+        reply_markup: getSkinFeaturesKeyboard(ctx)
     })
 })
 
@@ -185,30 +195,43 @@ bot.command('profile', async (ctx) => {
 bot.callbackQuery(['dry', 'oily', 'combo'], async (ctx) => {
     ctx.session.skinType = ctx.callbackQuery.data
     const typeName = getSkinTypeName(ctx.session.skinType)
-    
+
     await ctx.answerCallbackQuery(`✅ Тип кожи: ${typeName}`)
     
     await ctx.editMessageText(`✅ *Тип кожи сохранен:* ${typeName}\n\nТеперь укажите особенности кожи (если есть):`, {
         parse_mode: 'Markdown',
-        reply_markup: skinFeaturesKeyboard
+        reply_markup: getSkinFeaturesKeyboard(ctx)
     })
 })
 
 
 // Обработчики callback для особенностей кожи
-bot.callbackQuery(['acne', 'rosacea', 'allergies', 'couperose', 'hypersensitivity'], async (ctx) => {
+bot.callbackQuery(['acne', 'rosacea', 'allergies', 'couperose', 'hypersensitivity', 'dermatit'], async (ctx) => {
     if (ctx.session.skinFeatures.includes('none')) {
         ctx.session.skinFeatures = []
     }
+
+
+
     if (ctx.session.skinFeatures.includes(ctx.callbackQuery.data)) {
-        ctx.answerCallbackQuery(`Вы уже добавили ${getFeaturesName(ctx.callbackQuery.data)}`)
+        ctx.answerCallbackQuery(`❌ Удалена особенность: ${getFeaturesName(ctx.callbackQuery.data)}`)
+        const index = ctx.session.skinFeatures.indexOf(ctx.callbackQuery.data)
+        ctx.session.skinFeatures.splice(index, 1)
+
+        await ctx.editMessageText('📝 Есть ли у вас особенности кожи?', {
+            reply_markup: getSkinFeaturesKeyboard(ctx)
+        })
         return
     }
+
+
     ctx.session.skinFeatures.push(ctx.callbackQuery.data)
     const featuresText = getFeaturesName(ctx.callbackQuery.data)
     
     await ctx.answerCallbackQuery(`✅ Добавлена особенность: ${featuresText}`)
-    
+    await ctx.editMessageText('📝 Есть ли у вас особенности кожи?', {
+        reply_markup: getSkinFeaturesKeyboard(ctx)
+    })
 
 })
 

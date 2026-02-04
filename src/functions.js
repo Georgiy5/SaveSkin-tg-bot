@@ -68,6 +68,7 @@ export function getFeaturesName(feature) {
         'allergies': 'Аллергии',
         'couperose': 'Купероз',
         'hypersensitivity': 'Повышенная чувствительность',
+        'dermatit': 'Дерматит',
         'none': 'Нет особенностей'
     }
     return features[feature] || 'Не указаны'
