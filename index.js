@@ -41,7 +41,7 @@ bot.use(async (ctx, next) => {
 bot.use(session({
     initial: () => ({
         skinType: null,
-        skinFeatures: null,
+        skinFeatures: [],
     }),
     storage: new MemorySessionStorage()
 }))
@@ -182,7 +182,7 @@ bot.command('profile', async (ctx) => {
 
 
 // Обработчики callback для типа кожи
-bot.callbackQuery(['dry', 'normal', 'oily', 'combo', 'sensitive'], async (ctx) => {
+bot.callbackQuery(['dry', 'oily', 'combo'], async (ctx) => {
     ctx.session.skinType = ctx.callbackQuery.data
     const typeName = getSkinTypeName(ctx.session.skinType)
     
@@ -196,15 +196,41 @@ bot.callbackQuery(['dry', 'normal', 'oily', 'combo', 'sensitive'], async (ctx) =
 
 
 // Обработчики callback для особенностей кожи
-bot.callbackQuery(['acne', 'rosacea', 'allergies', 'couperose', 'hypersensitivity', 'none'], async (ctx) => {
-    ctx.session.skinFeatures = ctx.callbackQuery.data
-    const featuresText = getFeaturesName(ctx.session.skinFeatures)
+bot.callbackQuery(['acne', 'rosacea', 'allergies', 'couperose', 'hypersensitivity'], async (ctx) => {
+    if (ctx.session.skinFeatures.includes('none')) {
+        ctx.session.skinFeatures = []
+    }
+    if (ctx.session.skinFeatures.includes(ctx.callbackQuery.data)) {
+        ctx.answerCallbackQuery(`Вы уже добавили ${getFeaturesName(ctx.callbackQuery.data)}`)
+        return
+    }
+    ctx.session.skinFeatures.push(ctx.callbackQuery.data)
+    const featuresText = getFeaturesName(ctx.callbackQuery.data)
     
-    await ctx.answerCallbackQuery(`✅ Особенности: ${featuresText}`)
+    await ctx.answerCallbackQuery(`✅ Добавлена особенность: ${featuresText}`)
     
-    const configText = `⚙️ *Настройки сохранены:*
+
+})
+
+bot.callbackQuery('none', async (ctx) => {
+    ctx.session.skinFeatures = [ctx.callbackQuery.data]
+            const configText = `⚙️ *Настройки сохранены:*
 👤 Тип кожи: ${getSkinTypeName(ctx.session.skinType)}
-📝 Особенности: ${featuresText}
+📝 Особенности: ${getFeaturesName(ctx.callbackQuery.data)}
+
+Теперь отправьте мне состав косметического средства для анализа!`
+    
+    await ctx.editMessageText(configText, {
+        parse_mode: 'Markdown',
+    })
+
+})
+
+bot.callbackQuery('stop', async (ctx) => {
+        const features = ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ')
+        const configText = `⚙️ *Настройки сохранены:*
+👤 Тип кожи: ${getSkinTypeName(ctx.session.skinType)}
+📝 Особенности: ${features}
 
 Теперь отправьте мне состав косметического средства для анализа!`
     
@@ -259,7 +285,7 @@ Water, Cyclopentasiloxane, Dimethicone, Niacinamide, Cetyl PEG/PPG-10/1 Dimethic
     try {
         // Готовим данные для анализа
         const skinTypeName = getSkinTypeName(ctx.session.skinType)
-        const features = ctx.session.skinFeatures ? getFeaturesName(ctx.session.skinFeatures) : 'нет особенностей'
+        const features = ctx.session.skinFeatures ? ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ') : 'нет особенностей'
         
         // Уведомляем о начале анализа
         await ctx.reply('🔬 *Анализирую состав...*\nЭто может занять до 30 секунд.', {

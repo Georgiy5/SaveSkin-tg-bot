@@ -12,7 +12,8 @@ export const skinFeaturesKeyboard = new InlineKeyboard()
     .text('Аллергии', 'allergies').row()
     .text('Купероз', 'couperose').row()
     .text('Повышенная чувствительность', 'hypersensitivity').row()
-    .text('Нет особенностей', 'none')
+    .text('Нет особенностей', 'none').row()
+    .text('Stop', 'stop')
 
 // Главное меню
 export const mainMenuKeyboard = new InlineKeyboard()
