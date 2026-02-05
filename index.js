@@ -354,11 +354,12 @@ bot.callbackQuery('trial', async (ctx) => {
         } else {
             await User.updateOne({telegramId: ctx.from.id}, { usedTrial: true, endDate: addDays(now, 1), isSubscriber: true})
             await ctx.editMessageText('Ваш пробный период активирован✅')
-        }
-
-        await ctx.reply('👤 Выберите ваш тип кожи:', {
+            await ctx.reply('👤 Выберите ваш тип кожи:', {
             reply_markup: skinTypeKeyboard
         })
+        }
+
+
     } catch (error) {
         console.log(error)
         await ctx.reply('Произошла ошибка, попробуйте еще раз!')
