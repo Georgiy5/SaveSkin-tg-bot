@@ -35,9 +35,6 @@ bot.use(async (ctx, next) => {
     }
     
     await checkSubscription(ctx, next);
-    await ctx.reply('👤 Выберите ваш тип кожи:', {
-        reply_markup: skinTypeKeyboard
-    })
 });
 
 // Настройка сессий для хранения данных пользователя
