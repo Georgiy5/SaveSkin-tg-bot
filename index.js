@@ -35,6 +35,9 @@ bot.use(async (ctx, next) => {
     }
     
     await checkSubscription(ctx, next);
+    await ctx.reply('👤 Выберите ваш тип кожи:', {
+        reply_markup: skinTypeKeyboard
+    })
 });
 
 // Настройка сессий для хранения данных пользователя
@@ -355,10 +358,16 @@ bot.callbackQuery('trial', async (ctx) => {
             await User.updateOne({telegramId: ctx.from.id}, { usedTrial: true, endDate: addDays(now, 1), isSubscriber: true})
             await ctx.editMessageText('Ваш пробный период активирован✅')
         }
+
+        await ctx.reply('👤 Выберите ваш тип кожи:', {
+            reply_markup: skinTypeKeyboard
+        })
     } catch (error) {
         console.log(error)
         await ctx.reply('Произошла ошибка, попробуйте еще раз!')
     }
+
+
 })
 
 bot.callbackQuery('fullSubscription', async(ctx) => {
