@@ -1,8 +1,8 @@
 import 'dotenv/config'
-import { Bot, Keyboard, InlineKeyboard, session, MemorySessionStorage } from 'grammy'
+import { Bot, InlineKeyboard, session, MemorySessionStorage } from 'grammy'
 import { hydrate } from '@grammyjs/hydrate'
 import { askDeepSeek } from './src/deepseek.js'
-import { sendSplitMessages, splitMessage, getFeaturesName, getSkinTypeName, isLikelyIngredientList } from './src/functions.js'
+import { sendSplitMessages, getFeaturesName, getSkinTypeName, isLikelyIngredientList } from './src/functions.js'
 import { skinTypeKeyboard, getSkinFeaturesKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan} from './src/keyboards.js'
 import mongoose from 'mongoose'
 import { welcomeText, notWelcomeText } from './src/text.js'
@@ -112,15 +112,6 @@ bot.command('type', async (ctx) => {
 
 // Обработчик команды /features
 bot.command('features', async (ctx) => {
-    // const skinFeaturesKeyboard = new InlineKeyboard()
-    // .text(`Акне/прыщи${ctx.session.skinFeatures.includes('acne') ? '✅' : ''}`, 'acne').row()
-    // .text(`Розацеа${ctx.session.skinFeatures.includes('rosacea') ? '✅' : ''}`, 'rosacea').row()
-    // .text(`Аллергии${ctx.session.skinFeatures.includes('allergies') ? '✅' : ''}`, 'allergies').row()
-    // .text(`Купероз${ctx.session.skinFeatures.includes('couperose') ? '✅' : ''}`, 'couperose').row()
-    // .text(`Повышенная чувствительность${ctx.session.skinFeatures.includes('hypersensitivity') ? '✅' : ''}`, 'hypersensitivity').row()
-    // .text(`Дерматит${ctx.session.skinFeatures.includes('dermatit') ? '✅' : ''}`, 'dermatit').row()
-    // .text('Нет особенностей', 'none').row()
-    // .text('Перейти к анализу 👉', 'stop')
 
     await ctx.reply('📝 Есть ли у вас особенности кожи?', {
         reply_markup: getSkinFeaturesKeyboard(ctx)
