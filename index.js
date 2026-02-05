@@ -100,6 +100,7 @@ bot.command('start', async (ctx) => {
         parse_mode: 'Markdown',
         reply_markup: skinTypeKeyboard
     })
+
 })
 
 // Обработчик команды /type

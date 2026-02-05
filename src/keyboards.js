@@ -7,13 +7,6 @@ export const skinTypeKeyboard = new InlineKeyboard()
     .text('Комбинированная', 'combo').row()
 
 
-// Главное меню
-export const mainMenuKeyboard = new InlineKeyboard()
-    .text('🔍 Проверить состав').row()
-    .text('👤 Изменить тип кожи').row()
-    .text('📋 История проверок').row()
-    .text('❓ Помощь')
-
 export const subcsriptionsPlan = new InlineKeyboard()
     .text('Купить на 1 месяц', 'month').row()
     .text('Купить на 6 месяцев', 'halfYear').row()
