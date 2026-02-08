@@ -3,7 +3,7 @@ import { Bot, InlineKeyboard, session, MemorySessionStorage } from 'grammy'
 import { hydrate } from '@grammyjs/hydrate'
 import { askDeepSeek } from './src/deepseek.js'
 import { sendSplitMessages, getFeaturesName, getSkinTypeName, isLikelyIngredientList } from './src/functions.js'
-import { skinTypeKeyboard, getSkinFeaturesKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan} from './src/keyboards.js'
+import { skinTypeKeyboard, getSkinFeaturesKeyboard, subcsriptionsPlan, welcomeKeyboard, welcomeSubscriptionsPlan, retinoidsKeyboard} from './src/keyboards.js'
 import mongoose from 'mongoose'
 import { welcomeText, notWelcomeText } from './src/text.js'
 import { monthlyPayment, halfYearlyPayment, yearlyPayment } from './src/sendInvoice.js'
@@ -42,6 +42,7 @@ bot.use(session({
     initial: () => ({
         skinType: null,
         skinFeatures: [],
+        Retinoids: null
     }),
     storage: new MemorySessionStorage()
 }))
@@ -55,6 +56,7 @@ bot.api.setMyCommands([
     { command: 'start', description: 'Запустить бота' },
     { command: 'type', description: 'Указать тип кожи' },
     { command: 'features', description: 'Указать особенности кожи' },
+    { command: 'retinoids', description: 'Указать использование наружных ретиноидов' },
     { command: 'check', description: 'Проверить состав средства' },
     { command: 'profile', description: 'Профиль' },
 ])
@@ -115,6 +117,12 @@ bot.command('features', async (ctx) => {
 
     await ctx.reply('📝 Есть ли у вас особенности кожи?', {
         reply_markup: getSkinFeaturesKeyboard(ctx)
+    })
+})
+
+bot.command('retinoids', async (ctx) => {
+    await ctx.reply('Используете ли вы наружные ретиноиды?🧴', {
+        reply_markup: retinoidsKeyboard
     })
 })
 
@@ -228,32 +236,39 @@ bot.callbackQuery(['acne', 'rosacea', 'allergies', 'couperose', 'hypersensitivit
 })
 
 bot.callbackQuery('none', async (ctx) => {
-    ctx.session.skinFeatures = [ctx.callbackQuery.data]
-            const configText = `⚙️ *Настройки сохранены:*
-👤 Тип кожи: ${getSkinTypeName(ctx.session.skinType)}
-📝 Особенности: ${getFeaturesName(ctx.callbackQuery.data)}
-
-Теперь отправьте мне состав косметического средства для анализа!`
-    
-    await ctx.editMessageText(configText, {
-        parse_mode: 'Markdown',
+    await ctx.answerCallbackQuery()
+    ctx.session.skinFeatures= ['none']
+    await ctx.editMessageText('Используете ли вы наружные ретиноиды?🧴', {
+        reply_markup: retinoidsKeyboard
     })
-
 })
 
 bot.callbackQuery('stop', async (ctx) => {
-        const features = ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ')
-        const configText = `⚙️ *Настройки сохранены:*
+    await ctx.editMessageText('Используете ли вы наружные ретиноиды?🧴', {
+        reply_markup: retinoidsKeyboard
+    })
+})
+
+bot.callbackQuery(['retinoidsYes', 'retinoidsNo'], async (ctx) => {
+    ctx.answerCallbackQuery()
+    if (ctx.callbackQuery.data === 'retinoidsYes') {
+        ctx.session.Retinoids = 'Да'
+    } else {
+        ctx.session.Retinoids = 'Нет'
+    }
+    const features = ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ')
+    const configText = `⚙️ *Настройки сохранены:*
 👤 Тип кожи: ${getSkinTypeName(ctx.session.skinType)}
 📝 Особенности: ${features}
+🧴 Использование наружных ретиноидов: ${ctx.session.Retinoids}
 
 Теперь отправьте мне состав косметического средства для анализа!`
     
     await ctx.editMessageText(configText, {
         parse_mode: 'Markdown',
     })
-})
 
+})
 
 bot.callbackQuery('month', monthlyPayment)
 bot.callbackQuery('halfYear', halfYearlyPayment)
@@ -301,14 +316,17 @@ Water, Cyclopentasiloxane, Dimethicone, Niacinamide, Cetyl PEG/PPG-10/1 Dimethic
         // Готовим данные для анализа
         const skinTypeName = getSkinTypeName(ctx.session.skinType)
         const features = ctx.session.skinFeatures ? ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ') : 'нет особенностей'
+        const retinoids = ctx.session.Retinoids ? ctx.session.Retinoids : 'Нет'
         
         // Уведомляем о начале анализа
         await ctx.reply('🔬 *Анализирую состав...*\nЭто может занять до 30 секунд.', {
             parse_mode: 'Markdown'
         })
+
+        await ctx.api.sendChatAction(ctx.chat.id, 'typing')
         
         // Получаем анализ от DeepSeek
-        const response = await askDeepSeek(skinTypeName, features, message)
+        const response = await askDeepSeek(skinTypeName, features, message, retinoids)
         
         // Извлекаем вердикт из ответа для сохранения в историю
         const verdictMatch = response.match(/📌 ВЕРДИКТ: (.+?)(?:\n|$)/)

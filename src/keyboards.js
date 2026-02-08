@@ -36,3 +36,7 @@ export const getSkinFeaturesKeyboard = (ctx) => {
         
     return skinFeaturesKeyboard
 }
+
+export const retinoidsKeyboard = new InlineKeyboard()
+    .text('Да✅', 'retinoidsYes').row()
+    .text('Нет🚫', 'retinoidsNo').row()
