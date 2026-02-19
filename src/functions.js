@@ -57,6 +57,7 @@ export function getSkinTypeName(type) {
         'dry': 'Сухая',
         'oily': 'Жирная',
         'combo': 'Комбинированная',
+        'normis': 'Нормальная'
     }
     return types[type] || 'Не указан'
 }

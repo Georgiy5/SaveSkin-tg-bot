@@ -134,11 +134,11 @@ bot.command('check', async (ctx) => {
     }
 
     const skinTypeName = getSkinTypeName(ctx.session.skinType)
-    const features = ctx.session.skinFeatures ? getFeaturesName(ctx.session.skinFeatures) : 'нет особенностей'
-
+    const features = ctx.session.skinFeatures.map(e => getFeaturesName(e)).join(', ')
         const checkText = `✅ *Ваши настройки:*
 👤 Тип кожи: ${skinTypeName}
 📝 Особенности: ${features}
+🧴 Использование наружных ретиноидов: ${ctx.session.Retinoids}
 
 🔍 *Отправьте мне состав косметического средства.*
 
@@ -192,7 +192,7 @@ bot.command('profile', async (ctx) => {
 
 
 // Обработчики callback для типа кожи
-bot.callbackQuery(['dry', 'oily', 'combo'], async (ctx) => {
+bot.callbackQuery(['dry', 'oily', 'combo', 'normis'], async (ctx) => {
     ctx.session.skinType = ctx.callbackQuery.data
     const typeName = getSkinTypeName(ctx.session.skinType)
 
@@ -262,7 +262,12 @@ bot.callbackQuery(['retinoidsYes', 'retinoidsNo'], async (ctx) => {
 📝 Особенности: ${features}
 🧴 Использование наружных ретиноидов: ${ctx.session.Retinoids}
 
-Теперь отправьте мне состав косметического средства для анализа!`
+Теперь отправьте мне состав косметического средства для анализа!
+
+📋 *Формат (INCI):*
+Aqua, Glycerin, Niacinamide, Salicylic Acid, Zinc PCA
+
+💡 *Совет:* Можно скопировать состав с упаковки или сайта производителя.`
     
     await ctx.editMessageText(configText, {
         parse_mode: 'Markdown',
@@ -371,7 +376,7 @@ bot.callbackQuery('trial', async (ctx) => {
             await ctx.reply('Вы уже использовали пробный период❌')
         } else {
             await User.updateOne({telegramId: ctx.from.id}, { usedTrial: true, endDate: addDays(now, 1), isSubscriber: true})
-            await ctx.editMessageText('Ваш пробный период активирован✅')
+            await ctx.reply('Ваш пробный период активирован✅')
             await ctx.reply('👤 Выберите ваш тип кожи:', {
             reply_markup: skinTypeKeyboard
         })

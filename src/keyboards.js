@@ -5,6 +5,7 @@ export const skinTypeKeyboard = new InlineKeyboard()
     .text('Сухая', 'dry').row()
     .text('Жирная', 'oily').row()
     .text('Комбинированная', 'combo').row()
+    .text('Нормальная', 'normis')
 
 
 export const subcsriptionsPlan = new InlineKeyboard()
